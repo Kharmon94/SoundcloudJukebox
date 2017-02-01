@@ -1,71 +1,100 @@
-var players = []; // all the soundcloud player objects here, per song
-var currentSong = 0;
-$(document).ready(function(){
-  SC.initialize({
-    client_id: 'f665fc458615b821cdf1a26b6d1657f6'
-    });
- 
+//var players = []; // all the soundcloud player objects here, per song
+//var currentSong = 0;
 
-  $("#searchbar").submit(function(event){
-  	event.preventDefault();
-	SC.get("/tracks", {q: $("input[name=searchbox]").val()})
-	  .then(function(response) {
-	    console.log(response);
-	    for (var i = 0; i < response.length; i++) {
-	      var art = response[i].artwork_url;
-	      if( !art ) art = response[i].user.avatar_;
-	      $("ul").append("<li data-stream='"+ response[i].stream_url.match(/\/tracks\/[0-9]+/)[0] + "' data-index='"+ i +"'data-duration='" + response[i].duration + "'>" + response[i].title + "<img src='"+ art +"' /></li>");
-	      
-	    }
-	  })
-  
-  .then(function(){
+function KyleBox(){
+  // initialize soundcloud, and store a reference to it in our instance
+  this.players = [];
+  this.currentSong = 0;
+  this.soundcloud = SC; // copy SC to soundcloud instance variable
+  this.soundcloud.initialize({
+    client_id: 'f665fc458615b821cdf1a26b6d1657f6'
+  });
+
+}
+
+
+KyleBox.prototype.play = function(){
+  this.players[this.currentSong].play();
+}
+
+KyleBox.prototype.pause = function(){
+  this.players[this.currentSong].pause();
+}
+
+KyleBox.prototype.stop = function(){
+  this.players[this.currentSong].pause();
+  this.players[this.currentSong].seek(0);
+}
+
+KyleBox.prototype.next = function(){
+    this.currentSong += 1;
+    if( this.currentSong >= $("ul li").length) {
+      this.currentSong = 0;
+    }
+    this.play();
+}
+
+KyleBox.prototype.searchTracks = function(){
+  console.log( "this", this );
+  var that = this;
+  this.soundcloud.get("/tracks", {q: $("input[name=searchbox]").val()})
+    .then(function(response) {
+      console.log(response);
+      for (var i = 0; i < response.length; i++) {
+        var art = response[i].artwork_url;
+        if( !art ) art = response[i].user.avatar_;
+        $("ul").append("<li data-stream='"+ response[i].stream_url.match(/\/tracks\/[0-9]+/)[0] + "' data-index='"+ i +"'data-duration='" + response[i].duration + "'>" + response[i].title + "<img src='"+ art +"' /></li>");
+        
+      }
+    }).then(function(){
     // $("ul li").click(function(event){
     $("ul li").on("click",function(event){
       console.log(event);
       currentSong = parseInt($(event.target).attr('data-index'));
-      if( !players[$(event.target).attr('data-index')] ) {
-      	SC.stream( $(event.target).attr('data-stream') ).then(function(player){
-	        console.log(player);
-	        // save the player object to players...
-	        players[$(event.target).attr('data-index')] = player;
-	        players[$(event.target).attr('data-index')].play();
-	        players[$(event.target).attr('data-index')].on("finish",function(){
-	          console.log( "Done" );
-	        });
-	      });
+      //console.log( this, this.players);
+      if( !that.players[$(event.target).attr('data-index')] ) {
+        that.soundcloud.stream( $(event.target).attr('data-stream') ).then(function(player){
+          console.log(player);
+          // save the player object to players...
+          that.players[$(event.target).attr('data-index')] = player;
+          that.players[$(event.target).attr('data-index')].play();
+          that.players[$(event.target).attr('data-index')].on("finish",function(){
+            console.log( "Done" );
+          });
+        });
       } else {
-      	players[$(event.target).attr('data-index')].play();
+        that.players[$(event.target).attr('data-index')].play();
         
       }
-
-      
     });
     console.log("inside then");
   });
-}); 
+}
+
+$(document).ready(function(){
+
+ var jukebox = new KyleBox();
+
+  $("#searchbar").submit(function(event){
+    event.preventDefault();
+    jukebox.searchTracks();
+  }); 
  $("#Play").click(function(){
-  	players[currentSong].play();
+    jukebox.play();
   });
   $("#Pause").click(function(){
-  	players[currentSong].pause();
+    jukebox.pause();
   });
   
    $("#stop").click(function(){
-  	players[currentSong].pause();
-  	players[currentSong].seek(0);
+      jukebox.stop();
   });
    // $("#next").click(function(){
-   // 	// add next song to empty array 
+   //   // add next song to empty array 
    // });
    $("#next").click(function(){
-   	// stop
-   	currentSong += 1;
-   	if( currentSong >= $("ul li").length) {
-   		currentSong = 0;
-   	}
-   var Next = $("ul li")[currentSong];
-   $(Next).click();
+    // stop
+      jukebox.next();
 
    });
   
