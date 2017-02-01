@@ -1,8 +1,5 @@
 var players = []; // all the soundcloud player objects here, per song
 var currentSong = 0;
-var cloudStream = SC.stream( $(event.target).attr('data-stream') ).then(function(player){
-          console.log(player);
-var Index = players[$(event.target).attr('data-index')]
 $(document).ready(function(){
   SC.initialize({
     client_id: 'f665fc458615b821cdf1a26b6d1657f6'
@@ -27,16 +24,19 @@ $(document).ready(function(){
     $("ul li").on("click",function(event){
       console.log(event);
       currentSong = parseInt($(event.target).attr('data-index'));
-      if( !Index.attr[('data-index')] ) {
-      	cloudStream;
+      if( !players[$(event.target).attr('data-index')] ) {
+      	SC.stream( $(event.target).attr('data-stream') ).then(function(player){
+	        console.log(player);
 	        // save the player object to players...
-	        Index = player;
-	        Index.play();
-	        Index.on("finish",function(){
+	        players[$(event.target).attr('data-index')] = player;
+	        players[$(event.target).attr('data-index')].play();
+	        players[$(event.target).attr('data-index')].on("finish",function(){
 	          console.log( "Done" );
 	        });
-	      } else {
+	      });
+      } else {
       	players[$(event.target).attr('data-index')].play();
+        
       }
 
       
@@ -44,8 +44,6 @@ $(document).ready(function(){
     console.log("inside then");
   });
 }); 
- 
- $('#Play').on.click(cloudStream)
  $("#Play").click(function(){
   	players[currentSong].play();
   });
